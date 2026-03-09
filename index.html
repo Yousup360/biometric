@@ -1,191 +1,176 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Biometric Attendance</title>
+    <title>Bio-Pulse | Professional Attendance System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .fingerprint-active { animation: pulse 1.5s infinite; }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .scan-line {
+            width: 100%; height: 2px; background: #3b82f6; position: absolute;
+            top: 0; left: 0; box-shadow: 0 0 15px #3b82f6;
+            animation: move-scan 2s infinite linear; display: none;
         }
+        @keyframes move-scan { 0% { top: 0; } 100% { top: 100%; } }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-[#0f172a] text-slate-200 min-h-screen font-sans">
 
-    <div class="max-w-4xl mx-auto py-10 px-4">
-        <div class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-slate-800 mb-2">স্মার্ট বায়োমেট্রিক হাজিরা</h1>
-            <p class="text-gray-500">মোবাইল বা ইউএসবি ফিঙ্গারপ্রিন্ট ব্যবহার করে হাজিরা দিন</p>
-        </div>
+    <div class="container mx-auto px-4 py-12 max-w-6xl">
+        <header class="flex justify-between items-center mb-12">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                    BIO-PULSE PRO
+                </h1>
+                <p class="text-slate-500 text-sm">Secure Biometric Management System</p>
+            </div>
+            <div id="liveTime" class="text-xl font-mono text-blue-400 bg-blue-500/10 px-4 py-2 rounded-lg border border-blue-500/20">
+                00:00:00
+            </div>
+        </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center">
-                <div id="sensorIcon" class="w-32 h-32 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl border-4 border-blue-100">
-                    <i class="fas fa-fingerprint"></i>
+        <div class="grid lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-5 space-y-6">
+                <div class="glass p-8 rounded-3xl relative overflow-hidden text-center">
+                    <div id="scannerBox" class="w-40 h-48 mx-auto mb-6 bg-slate-800 rounded-2xl flex items-center justify-center relative border-2 border-slate-700">
+                        <i id="fingerIcon" class="fas fa-fingerprint text-6xl text-slate-600 transition-all duration-300"></i>
+                        <div id="scanLine" class="scan-line"></div>
+                    </div>
+
+                    <h2 id="mainStatus" class="text-xl font-semibold mb-2">Scanner Ready</h2>
+                    <p id="subStatus" class="text-slate-500 text-sm mb-8">Place your finger on the device sensor</p>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <button onclick="authenticate()" class="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-lg shadow-blue-900/20">
+                            <i class="fas fa-id-badge mr-2"></i> Mark Attendance
+                        </button>
+                        <button onclick="register()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 rounded-2xl font-medium transition-all">
+                            <i class="fas fa-user-plus mr-2"></i> Enroll New User
+                        </button>
+                    </div>
                 </div>
-                
-                <h2 id="statusTitle" class="text-xl font-bold text-gray-700 mb-2">স্ক্যানার প্রস্তুত</h2>
-                <p id="statusMsg" class="text-sm text-gray-500 mb-8">নিচের বাটনে ক্লিক করে আপনার আঙুলের ছাপ দিন</p>
 
-                <div class="space-y-3">
-                    <button onclick="handleAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition duration-300 shadow-lg flex items-center justify-center gap-2">
-                        <i class="fas fa-sign-in-alt"></i> হাজিরা দিন (Punch In)
-                    </button>
-                    
-                    <button onclick="handleRegistration()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition">
-                        নতুন ফিঙ্গারপ্রিন্ট রেজিস্টার করুন
-                    </button>
-                </div>
+                <div id="alertBox" class="hidden p-4 rounded-2xl text-sm font-medium border text-center"></div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                <div class="p-5 border-b bg-gray-50 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-700"><i class="fas fa-list-ul mr-2 text-blue-600"></i>আজকের লগ</h3>
-                    <span id="currentTime" class="text-xs font-mono bg-blue-100 text-blue-700 px-2 py-1 rounded">--:--:--</span>
-                </div>
-                <div class="h-[350px] overflow-y-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="p-3 text-gray-600 border-b">ইউজার</th>
-                                <th class="p-3 text-gray-600 border-b">সময়</th>
-                                <th class="p-3 text-gray-600 border-b text-right">স্ট্যাটাস</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logBody">
-                            </tbody>
-                    </table>
+            <div class="lg:col-span-7">
+                <div class="glass rounded-3xl overflow-hidden flex flex-col h-[500px]">
+                    <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/30">
+                        <h3 class="font-bold tracking-wide">REAL-TIME ACCESS LOGS</h3>
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 font-bold tracking-widest">LIVE</span>
+                    </div>
+                    <div class="overflow-y-auto flex-grow p-4 space-y-3" id="logContainer">
+                        <div id="emptyMsg" class="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
+                            <i class="fas fa-folder-open text-4xl mb-2"></i>
+                            <p>No activity detected yet</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <script>
-        // --- configuration & Data ---
-        let registeredUsers = JSON.parse(localStorage.getItem('bioUsers')) || [];
+    
 
-        // সময় আপডেট
+    <script>
+        // --- System Logic ---
+        const logContainer = document.getElementById('logContainer');
+        const scannerBox = document.getElementById('scannerBox');
+        const scanLine = document.getElementById('scanLine');
+        const fingerIcon = document.getElementById('fingerIcon');
+
+        // Clock
         setInterval(() => {
-            document.getElementById('currentTime').innerText = new Date().toLocaleTimeString();
+            document.getElementById('liveTime').innerText = new Date().toLocaleTimeString();
         }, 1000);
 
-        // --- Core Functions ---
-
-        // ১. ফিঙ্গারপ্রিন্ট রেজিস্ট্রেশন (WebAuthn API)
-        async function handleRegistration() {
-            if (!window.PublicKeyCredential) return alert("আপনার ব্রাউজার বায়োমেট্রিক সাপোর্ট করে না।");
-
-            updateStatus("রেজিস্ট্রেশন চলছে...", "আঙুলের ছাপ দিন", "text-orange-500", true);
-
+        // Core Biometric Function (Registration)
+        async function register() {
+            updateUI("ENROLLING", "blue");
             try {
                 const challenge = crypto.getRandomValues(new Uint8Array(32));
                 const userId = crypto.getRandomValues(new Uint8Array(16));
-
+                
                 const options = {
                     publicKey: {
                         challenge: challenge,
-                        rp: { name: "Bio Attendance", id: window.location.hostname || "localhost" },
-                        user: {
-                            id: userId,
-                            name: "user_" + Date.now(),
-                            displayName: "নতুন ইউজার"
-                        },
+                        rp: { name: "BioPulse System", id: window.location.hostname },
+                        user: { id: userId, name: "user_" + Date.now(), displayName: "Pro Developer" },
                         pubKeyCredParams: [{ alg: -7, type: "public-key" }],
                         authenticatorSelection: { authenticatorAttachment: "platform" },
                         timeout: 60000
                     }
                 };
 
-                const credential = await navigator.credentials.create(createOptions(options));
-                
-                // লোকাল স্টোরেজে সেভ (বাস্তব ক্ষেত্রে সার্ভারে যাবে)
-                const newUser = { id: credential.id, name: "ইউজার-" + (registeredUsers.length + 1) };
-                registeredUsers.push(newUser);
-                localStorage.setItem('bioUsers', JSON.stringify(registeredUsers));
-
-                updateStatus("রেজিস্ট্রেশন সফল!", "এখন আপনি হাজিরা দিতে পারবেন", "text-green-600", false);
-                addLog(newUser.name, "Registered");
-
+                const credential = await navigator.credentials.create(options);
+                if(credential) {
+                    addLog("ENROLLMENT", "SUCCESS", "#" + credential.id.slice(0, 8));
+                    showAlert("User Enrolled Successfully!", "success");
+                }
             } catch (err) {
-                console.error(err);
-                updateStatus("ব্যর্থ হয়েছে!", "আবার চেষ্টা করুন", "text-red-500", false);
-            }
+                showAlert("Registration Failed or Canceled", "error");
+            } finally { resetUI(); }
         }
 
-        // ২. হাজিরা বা ভেরিফিকেশন
-        async function handleAttendance() {
-            if (registeredUsers.length === 0) return alert("আগে অন্তত একটি ফিঙ্গারপ্রিন্ট রেজিস্টার করুন!");
-
-            updateStatus("স্ক্যান হচ্ছে...", "আঙুলের ছাপ দিন", "text-blue-600", true);
-
+        // Core Biometric Function (Attendance)
+        async function authenticate() {
+            updateUI("AUTHENTICATING", "emerald");
             try {
                 const challenge = crypto.getRandomValues(new Uint8Array(32));
-                const options = {
-                    publicKey: {
-                        challenge: challenge,
-                        userVerification: "required"
-                    }
-                };
+                const assertion = await navigator.credentials.get({
+                    publicKey: { challenge: challenge, userVerification: "required" }
+                });
 
-                const assertion = await navigator.credentials.get(options);
-                
-                // এখানে সার্ভার ভেরিফিকেশন হবে, আমরা আপাতত সাকসেস ধরছি
-                updateStatus("হাজিরা সফল!", "ধন্যবাদ, আপনার হাজিরা নেওয়া হয়েছে", "text-green-600", false);
-                addLog("ইউজার (Verified)", "Present");
-
+                if(assertion) {
+                    addLog("ATTENDANCE", "PRESENT", "Verified");
+                    showAlert("Attendance Marked Successfully!", "success");
+                }
             } catch (err) {
-                console.error(err);
-                updateStatus("ভুল আঙুল বা বাতিল!", "সঠিক আঙুল দিয়ে চেষ্টা করুন", "text-red-500", false);
-            }
+                showAlert("Verification Failed", "error");
+            } finally { resetUI(); }
         }
 
-        // --- UI Helpers ---
-
-        function updateStatus(title, msg, colorClass, isScanning) {
-            const titleEl = document.getElementById('statusTitle');
-            const msgEl = document.getElementById('statusMsg');
-            const iconEl = document.getElementById('sensorIcon');
-
-            titleEl.innerText = title;
-            titleEl.className = `text-xl font-bold mb-2 ${colorClass}`;
-            msgEl.innerText = msg;
-
-            if (isScanning) {
-                iconEl.classList.add('fingerprint-active');
-            } else {
-                iconEl.classList.remove('fingerprint-active');
-            }
+        // UI Helpers
+        function updateUI(status, color) {
+            document.getElementById('mainStatus').innerText = status;
+            document.getElementById('mainStatus').className = `text-xl font-semibold mb-2 text-${color}-400`;
+            scanLine.style.display = 'block';
+            fingerIcon.className = `fas fa-fingerprint text-6xl text-${color}-500`;
         }
 
-        function addLog(name, status) {
-            const logBody = document.getElementById('logBody');
-            const time = new Date().toLocaleTimeString();
-            const row = `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-3 font-medium text-gray-700">${name}</td>
-                    <td class="p-3 text-gray-500">${time}</td>
-                    <td class="p-3 text-right">
-                        <span class="px-2 py-1 rounded-full text-[10px] font-bold ${status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'} uppercase">
-                            ${status}
-                        </span>
-                    </td>
-                </tr>
+        function resetUI() {
+            document.getElementById('mainStatus').innerText = "Scanner Ready";
+            document.getElementById('mainStatus').className = "text-xl font-semibold mb-2";
+            scanLine.style.display = 'none';
+            fingerIcon.className = "fas fa-fingerprint text-6xl text-slate-600";
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alertBox');
+            box.innerText = msg;
+            box.className = `p-4 rounded-2xl text-sm font-medium border text-center ${type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 4000);
+        }
+
+        function addLog(type, status, detail) {
+            document.getElementById('emptyMsg').style.display = 'none';
+            const log = document.createElement('div');
+            log.className = "glass p-4 rounded-2xl flex justify-between items-center animate-fade-in";
+            log.innerHTML = `
+                <div>
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-tighter">${type}</div>
+                    <div class="font-mono text-sm text-blue-400">${detail}</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-slate-500">${new Date().toLocaleTimeString()}</div>
+                    <div class="text-[10px] font-bold text-emerald-400">${status}</div>
+                </div>
             `;
-            logBody.insertAdjacentHTML('afterbegin', row);
-        }
-
-        function createOptions(options) {
-            // Helper to fix potential platform issues
-            return options;
+            logContainer.prepend(log);
         }
     </script>
-
 </body>
 </html>
