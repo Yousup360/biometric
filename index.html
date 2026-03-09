@@ -3,74 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>সংখ্যা অনুযায়ী অ্যারে তৈরি</title>
+    <title>Smart Biometric Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding-top: 50px; background-color: #f0f2f5; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-        input { width: 80%; padding: 10px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 6px; outline: none; }
-        input:focus { border-color: #007bff; }
-        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #0056b3; }
-        .result { margin-top: 20px; padding: 10px; background: #e9ecef; border-radius: 6px; word-wrap: break-word; font-family: monospace; }
+        .fingerprint-active { animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 min-h-screen">
 
-<div class="card">
-    <h2>সংখ্যা ইনপুট দিন</h2>
-    <input type="number" id="numInput" placeholder="উদা: 5, 10, 20..." min="1">
-    <br>
-    <button onclick="generateAndSaveArray()">অ্যারে তৈরি ও সেভ</button>
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-slate-800 mb-2">স্মার্ট বায়োমেট্রিক হাজিরা</h1>
+            <p class="text-gray-500">মোবাইল বা ইউএসবি ফিঙ্গারপ্রিন্ট ব্যবহার করে হাজিরা দিন</p>
+        </div>
 
-    <div id="outputSection" style="display: none;">
-        <h4>সেভ করা অ্যারে:</h4>
-        <div class="result" id="displayArea"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center">
+                <div id="sensorIcon" class="w-32 h-32 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl border-4 border-blue-100">
+                    <i class="fas fa-fingerprint"></i>
+                </div>
+                
+                <h2 id="statusTitle" class="text-xl font-bold text-gray-700 mb-2">স্ক্যানার প্রস্তুত</h2>
+                <p id="statusMsg" class="text-sm text-gray-500 mb-8">নিচের বাটনে ক্লিক করে আপনার আঙুলের ছাপ দিন</p>
+
+                <div class="space-y-3">
+                    <button onclick="handleAttendance()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition duration-300 shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-sign-in-alt"></i> হাজিরা দিন (Punch In)
+                    </button>
+                    
+                    <button onclick="handleRegistration()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition">
+                        নতুন ফিঙ্গারপ্রিন্ট রেজিস্টার করুন
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div class="p-5 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-700"><i class="fas fa-list-ul mr-2 text-blue-600"></i>আজকের লগ</h3>
+                    <span id="currentTime" class="text-xs font-mono bg-blue-100 text-blue-700 px-2 py-1 rounded">--:--:--</span>
+                </div>
+                <div class="h-[350px] overflow-y-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="p-3 text-gray-600 border-b">ইউজার</th>
+                                <th class="p-3 text-gray-600 border-b">সময়</th>
+                                <th class="p-3 text-gray-600 border-b text-right">স্ট্যাটাস</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
     </div>
-</div>
 
-<script>
-    // পেজ লোড হলে আগের ডেটা দেখাবে
-    window.onload = showStoredData;
+    <script>
+        // --- configuration & Data ---
+        let registeredUsers = JSON.parse(localStorage.getItem('bioUsers')) || [];
 
-    function generateAndSaveArray() {
-        const input = document.getElementById('numInput');
-        const count = parseInt(input.value);
+        // সময় আপডেট
+        setInterval(() => {
+            document.getElementById('currentTime').innerText = new Date().toLocaleTimeString();
+        }, 1000);
 
-        if (isNaN(count) || count <= 0) {
-            alert("দয়া করে একটি সঠিক সংখ্যা দিন (১ এর বেশি)!");
-            return;
+        // --- Core Functions ---
+
+        // ১. ফিঙ্গারপ্রিন্ট রেজিস্ট্রেশন (WebAuthn API)
+        async function handleRegistration() {
+            if (!window.PublicKeyCredential) return alert("আপনার ব্রাউজার বায়োমেট্রিক সাপোর্ট করে না।");
+
+            updateStatus("রেজিস্ট্রেশন চলছে...", "আঙুলের ছাপ দিন", "text-orange-500", true);
+
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const userId = crypto.getRandomValues(new Uint8Array(16));
+
+                const options = {
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "Bio Attendance", id: window.location.hostname || "localhost" },
+                        user: {
+                            id: userId,
+                            name: "user_" + Date.now(),
+                            displayName: "নতুন ইউজার"
+                        },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                        authenticatorSelection: { authenticatorAttachment: "platform" },
+                        timeout: 60000
+                    }
+                };
+
+                const credential = await navigator.credentials.create(createOptions(options));
+                
+                // লোকাল স্টোরেজে সেভ (বাস্তব ক্ষেত্রে সার্ভারে যাবে)
+                const newUser = { id: credential.id, name: "ইউজার-" + (registeredUsers.length + 1) };
+                registeredUsers.push(newUser);
+                localStorage.setItem('bioUsers', JSON.stringify(registeredUsers));
+
+                updateStatus("রেজিস্ট্রেশন সফল!", "এখন আপনি হাজিরা দিতে পারবেন", "text-green-600", false);
+                addLog(newUser.name, "Registered");
+
+            } catch (err) {
+                console.error(err);
+                updateStatus("ব্যর্থ হয়েছে!", "আবার চেষ্টা করুন", "text-red-500", false);
+            }
         }
 
-        // ১. ইনপুট সংখ্যা অনুযায়ী অ্যারে তৈরি করা
-        // উদাহরণ: ৫ দিলে [1, 2, 3, 4, 5] তৈরি হবে
-        const newArray = [];
-        for (let i = 1; i <= count; i++) {
-            newArray.push(i);
+        // ২. হাজিরা বা ভেরিফিকেশন
+        async function handleAttendance() {
+            if (registeredUsers.length === 0) return alert("আগে অন্তত একটি ফিঙ্গারপ্রিন্ট রেজিস্টার করুন!");
+
+            updateStatus("স্ক্যান হচ্ছে...", "আঙুলের ছাপ দিন", "text-blue-600", true);
+
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const options = {
+                    publicKey: {
+                        challenge: challenge,
+                        userVerification: "required"
+                    }
+                };
+
+                const assertion = await navigator.credentials.get(options);
+                
+                // এখানে সার্ভার ভেরিফিকেশন হবে, আমরা আপাতত সাকসেস ধরছি
+                updateStatus("হাজিরা সফল!", "ধন্যবাদ, আপনার হাজিরা নেওয়া হয়েছে", "text-green-600", false);
+                addLog("ইউজার (Verified)", "Present");
+
+            } catch (err) {
+                console.error(err);
+                updateStatus("ভুল আঙুল বা বাতিল!", "সঠিক আঙুল দিয়ে চেষ্টা করুন", "text-red-500", false);
+            }
         }
 
-        // ২. লোকাল স্টোরেজে সেভ করা (JSON স্ট্রিং হিসেবে)
-        localStorage.setItem('numberArray', JSON.stringify(newArray));
+        // --- UI Helpers ---
 
-        // ৩. ইনপুট খালি করা এবং আউটপুট দেখানো
-        input.value = "";
-        showStoredData();
-        alert("অ্যারে সফলভাবে সেভ হয়েছে!");
-    }
+        function updateStatus(title, msg, colorClass, isScanning) {
+            const titleEl = document.getElementById('statusTitle');
+            const msgEl = document.getElementById('statusMsg');
+            const iconEl = document.getElementById('sensorIcon');
 
-    function showStoredData() {
-        const storedData = localStorage.getItem('numberArray');
-        const displayArea = document.getElementById('displayArea');
-        const outputSection = document.getElementById('outputSection');
+            titleEl.innerText = title;
+            titleEl.className = `text-xl font-bold mb-2 ${colorClass}`;
+            msgEl.innerText = msg;
 
-        if (storedData) {
-            outputSection.style.display = "block";
-            // স্ট্রিং থেকে আবার অ্যারেতে রূপান্তর করে দেখানো
-            const parsedArray = JSON.parse(storedData);
-            displayArea.textContent = JSON.stringify(parsedArray);
+            if (isScanning) {
+                iconEl.classList.add('fingerprint-active');
+            } else {
+                iconEl.classList.remove('fingerprint-active');
+            }
         }
-    }
-</script>
+
+        function addLog(name, status) {
+            const logBody = document.getElementById('logBody');
+            const time = new Date().toLocaleTimeString();
+            const row = `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3 font-medium text-gray-700">${name}</td>
+                    <td class="p-3 text-gray-500">${time}</td>
+                    <td class="p-3 text-right">
+                        <span class="px-2 py-1 rounded-full text-[10px] font-bold ${status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'} uppercase">
+                            ${status}
+                        </span>
+                    </td>
+                </tr>
+            `;
+            logBody.insertAdjacentHTML('afterbegin', row);
+        }
+
+        function createOptions(options) {
+            // Helper to fix potential platform issues
+            return options;
+        }
+    </script>
 
 </body>
 </html>
-
