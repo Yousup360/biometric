@@ -1,175 +1,174 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bio-Pulse | Professional Attendance System</title>
+    <title>BioSecure - Unique User Input</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .scan-line {
-            width: 100%; height: 2px; background: #3b82f6; position: absolute;
-            top: 0; left: 0; box-shadow: 0 0 15px #3b82f6;
-            animation: move-scan 2s infinite linear; display: none;
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .scanning { animation: scan-effect 1.5s infinite ease-in-out; }
+        @keyframes scan-effect {
+            0%, 100% { color: #475569; transform: scale(1); }
+            50% { color: #3b82f6; transform: scale(1.1); text-shadow: 0 0 15px #3b82f6; }
         }
-        @keyframes move-scan { 0% { top: 0; } 100% { top: 100%; } }
     </style>
 </head>
-<body class="bg-[#0f172a] text-slate-200 min-h-screen font-sans">
+<body class="bg-[#0f172a] text-slate-200 min-h-screen flex items-center justify-center p-4">
 
-    <div class="container mx-auto px-4 py-12 max-w-6xl">
-        <header class="flex justify-between items-center mb-12">
-            <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-                    BIO-PULSE PRO
-                </h1>
-                <p class="text-slate-500 text-sm">Secure Biometric Management System</p>
-            </div>
-            <div id="liveTime" class="text-xl font-mono text-blue-400 bg-blue-500/10 px-4 py-2 rounded-lg border border-blue-500/20">
-                00:00:00
-            </div>
-        </header>
+    <div class="max-w-xl w-full">
+        <div class="glass p-8 rounded-[2rem] shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+            
+            <header class="text-center mb-10">
+                <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">ইউজার এনরোলমেন্ট</h1>
+                <p class="text-slate-400 text-sm italic">প্রতিটি ইউজারের জন্য আলাদা ইউনিক বায়োমেট্রিক কি (Key)</p>
+            </header>
 
-        <div class="grid lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-5 space-y-6">
-                <div class="glass p-8 rounded-3xl relative overflow-hidden text-center">
-                    <div id="scannerBox" class="w-40 h-48 mx-auto mb-6 bg-slate-800 rounded-2xl flex items-center justify-center relative border-2 border-slate-700">
-                        <i id="fingerIcon" class="fas fa-fingerprint text-6xl text-slate-600 transition-all duration-300"></i>
-                        <div id="scanLine" class="scan-line"></div>
-                    </div>
-
-                    <h2 id="mainStatus" class="text-xl font-semibold mb-2">Scanner Ready</h2>
-                    <p id="subStatus" class="text-slate-500 text-sm mb-8">Place your finger on the device sensor</p>
-
-                    <div class="grid grid-cols-1 gap-4">
-                        <button onclick="authenticate()" class="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-lg shadow-blue-900/20">
-                            <i class="fas fa-id-badge mr-2"></i> Mark Attendance
-                        </button>
-                        <button onclick="register()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 rounded-2xl font-medium transition-all">
-                            <i class="fas fa-user-plus mr-2"></i> Enroll New User
-                        </button>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] mb-2 ml-1">ইউজারের নাম / আইডি</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500">
+                            <i class="fas fa-user-circle"></i>
+                        </span>
+                        <input type="text" id="userName" placeholder="যেমন: Arif_Hasan_102" 
+                            class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none shadow-inner">
                     </div>
                 </div>
 
-                <div id="alertBox" class="hidden p-4 rounded-2xl text-sm font-medium border text-center"></div>
-            </div>
-
-            <div class="lg:col-span-7">
-                <div class="glass rounded-3xl overflow-hidden flex flex-col h-[500px]">
-                    <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/30">
-                        <h3 class="font-bold tracking-wide">REAL-TIME ACCESS LOGS</h3>
-                        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 font-bold tracking-widest">LIVE</span>
+                <div id="scanTrigger" onclick="startBiometricEnroll()" class="group cursor-pointer bg-slate-900/80 border-2 border-dashed border-slate-700 hover:border-blue-500/50 rounded-3xl p-10 text-center transition-all duration-300">
+                    <div id="iconBox" class="mb-4">
+                        <i id="fingerIcon" class="fas fa-fingerprint text-6xl text-slate-700 transition-colors"></i>
                     </div>
-                    <div class="overflow-y-auto flex-grow p-4 space-y-3" id="logContainer">
-                        <div id="emptyMsg" class="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
-                            <i class="fas fa-folder-open text-4xl mb-2"></i>
-                            <p>No activity detected yet</p>
-                        </div>
-                    </div>
+                    <h3 id="scanTitle" class="text-slate-400 font-bold text-xs uppercase tracking-widest">স্ক্যান করতে এখানে ক্লিক করুন</h3>
                 </div>
+
+                <div id="resultArea" class="hidden animate-in fade-in duration-500">
+                    <label class="block text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] mb-2 ml-1">ইউনিক বায়োমেট্রিক আইডি (জেনারেটেড)</label>
+                    <textarea id="credentialOutput" readonly rows="3" 
+                        class="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 text-emerald-400 font-mono text-[11px] leading-relaxed resize-none outline-none shadow-inner"></textarea>
+                    <p class="text-[9px] text-slate-500 mt-2 text-right italic">* এটি প্রতিটি ইউজারের জন্য ইউনিক এবং সিকিউর</p>
+                </div>
+
+                <button onclick="saveUserToDB()" id="saveBtn" disabled class="w-full bg-slate-800 text-slate-500 font-bold py-5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3">
+                    <i class="fas fa-database"></i> ডাটাবেসে সেভ করুন
+                </button>
             </div>
         </div>
+
+        <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-sm font-bold shadow-2xl transition-all opacity-0 pointer-events-none"></div>
     </div>
 
-    
-
     <script>
-        // --- System Logic ---
-        const logContainer = document.getElementById('logContainer');
-        const scannerBox = document.getElementById('scannerBox');
-        const scanLine = document.getElementById('scanLine');
-        const fingerIcon = document.getElementById('fingerIcon');
+        // --- বায়োমেট্রিক লজিক ---
+        async function startBiometricEnroll() {
+            const userName = document.getElementById('userName').value.trim();
+            const fingerIcon = document.getElementById('fingerIcon');
+            const scanTitle = document.getElementById('scanTitle');
+            const resultArea = document.getElementById('resultArea');
+            const outputField = document.getElementById('credentialOutput');
+            const saveBtn = document.getElementById('saveBtn');
 
-        // Clock
-        setInterval(() => {
-            document.getElementById('liveTime').innerText = new Date().toLocaleTimeString();
-        }, 1000);
+            // ইউজার নেম চেক
+            if (!userName) {
+                showToast("দয়া করে ইউজারের নাম লিখুন আগে!", "bg-red-500 text-white");
+                return;
+            }
 
-        // Core Biometric Function (Registration)
-        async function register() {
-            updateUI("ENROLLING", "blue");
+            // সাপোর্ট চেক
+            if (!window.PublicKeyCredential) {
+                showToast("দুঃখিত, আপনার ব্রাউজার বায়োমেট্রিক সাপোর্ট করে না।", "bg-red-500 text-white");
+                return;
+            }
+
+            // UI স্ট্যাটাস পরিবর্তন
+            fingerIcon.classList.add('scanning');
+            scanTitle.innerText = "আপনার আঙুল স্ক্যান করুন...";
+            scanTitle.classList.replace('text-slate-400', 'text-blue-400');
+
             try {
+                // প্রতিটি ইউজারের জন্য আলাদা চ্যালেঞ্জ এবং আইডি
                 const challenge = crypto.getRandomValues(new Uint8Array(32));
-                const userId = crypto.getRandomValues(new Uint8Array(16));
-                
+                const userId = new TextEncoder().encode(userName + "_" + Date.now()); // ইউনিক করার জন্য টাইমস্ট্যাম্প
+
                 const options = {
                     publicKey: {
                         challenge: challenge,
-                        rp: { name: "BioPulse System", id: window.location.hostname },
-                        user: { id: userId, name: "user_" + Date.now(), displayName: "Pro Developer" },
+                        rp: { name: "BioSecure System", id: window.location.hostname },
+                        user: {
+                            id: userId,
+                            name: userName + "@local",
+                            displayName: userName
+                        },
                         pubKeyCredParams: [{ alg: -7, type: "public-key" }],
                         authenticatorSelection: { authenticatorAttachment: "platform" },
                         timeout: 60000
                     }
                 };
 
+                // বায়োমেট্রিক পপ-আপ কল
                 const credential = await navigator.credentials.create(options);
-                if(credential) {
-                    addLog("ENROLLMENT", "SUCCESS", "#" + credential.id.slice(0, 8));
-                    showAlert("User Enrolled Successfully!", "success");
+
+                if (credential) {
+                    // সাকসেস হলে ইউনিক আইডি ইনপুট ফিল্ডে বসানো
+                    outputField.value = credential.id;
+                    resultArea.classList.remove('hidden');
+                    
+                    // সেভ বাটন এক্টিভ করা
+                    saveBtn.disabled = false;
+                    saveBtn.classList.replace('bg-slate-800', 'bg-blue-600');
+                    saveBtn.classList.replace('text-slate-500', 'text-white');
+                    saveBtn.classList.add('hover:bg-blue-700', 'active:scale-95');
+
+                    showToast("ফিঙ্গারপ্রিন্ট সফলভাবে স্ক্যান হয়েছে!", "bg-emerald-500 text-white");
+                    scanTitle.innerText = "স্ক্যান সম্পন্ন!";
                 }
             } catch (err) {
-                showAlert("Registration Failed or Canceled", "error");
-            } finally { resetUI(); }
+                console.error(err);
+                showToast("স্ক্যান বাতিল বা ভুল হয়েছে।", "bg-orange-500 text-white");
+                scanTitle.innerText = "স্ক্যান ব্যর্থ!";
+            } finally {
+                fingerIcon.classList.remove('scanning');
+            }
         }
 
-        // Core Biometric Function (Attendance)
-        async function authenticate() {
-            updateUI("AUTHENTICATING", "emerald");
-            try {
-                const challenge = crypto.getRandomValues(new Uint8Array(32));
-                const assertion = await navigator.credentials.get({
-                    publicKey: { challenge: challenge, userVerification: "required" }
-                });
+        // ডাটাবেস সেভ সিমুলেশন (আপনি এখানে Laravel/PHP API কল করবেন)
+        function saveUserToDB() {
+            const userName = document.getElementById('userName').value;
+            const bioToken = document.getElementById('credentialOutput').value;
 
-                if(assertion) {
-                    addLog("ATTENDANCE", "PRESENT", "Verified");
-                    showAlert("Attendance Marked Successfully!", "success");
-                }
-            } catch (err) {
-                showAlert("Verification Failed", "error");
-            } finally { resetUI(); }
+            const payload = {
+                user: userName,
+                bio_id: bioToken
+            };
+
+            console.log("Submitting to Server:", payload);
+            showToast(userName + "-এর তথ্য সেভ হচ্ছে...", "bg-blue-500 text-white");
+            
+            // রিয়েল এপিআই কল উদাহরণ:
+            /*
+            fetch('/api/users/store', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            }).then(res => alert('Saved Successfully!'));
+            */
+
+            setTimeout(() => {
+                alert("সাফল্যের সাথে ডাটাবেসে সেভ করা হয়েছে!\nইউজার: " + userName + "\nআইডি: " + bioToken.slice(0, 15) + "...");
+                location.reload(); // ফর্ম রিসেট
+            }, 1000);
         }
 
-        // UI Helpers
-        function updateUI(status, color) {
-            document.getElementById('mainStatus').innerText = status;
-            document.getElementById('mainStatus').className = `text-xl font-semibold mb-2 text-${color}-400`;
-            scanLine.style.display = 'block';
-            fingerIcon.className = `fas fa-fingerprint text-6xl text-${color}-500`;
-        }
-
-        function resetUI() {
-            document.getElementById('mainStatus').innerText = "Scanner Ready";
-            document.getElementById('mainStatus').className = "text-xl font-semibold mb-2";
-            scanLine.style.display = 'none';
-            fingerIcon.className = "fas fa-fingerprint text-6xl text-slate-600";
-        }
-
-        function showAlert(msg, type) {
-            const box = document.getElementById('alertBox');
-            box.innerText = msg;
-            box.className = `p-4 rounded-2xl text-sm font-medium border text-center ${type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`;
-            box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 4000);
-        }
-
-        function addLog(type, status, detail) {
-            document.getElementById('emptyMsg').style.display = 'none';
-            const log = document.createElement('div');
-            log.className = "glass p-4 rounded-2xl flex justify-between items-center animate-fade-in";
-            log.innerHTML = `
-                <div>
-                    <div class="text-xs font-bold text-slate-500 uppercase tracking-tighter">${type}</div>
-                    <div class="font-mono text-sm text-blue-400">${detail}</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-xs text-slate-500">${new Date().toLocaleTimeString()}</div>
-                    <div class="text-[10px] font-bold text-emerald-400">${status}</div>
-                </div>
-            `;
-            logContainer.prepend(log);
+        // টোস্ট নোটিফিকেশন ফাংশন
+        function showToast(msg, classes) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-sm font-bold shadow-2xl transition-all duration-500 ${classes}`;
+            toast.style.opacity = "1";
+            setTimeout(() => { toast.style.opacity = "0"; }, 3000);
         }
     </script>
 </body>
