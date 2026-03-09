@@ -1,148 +1,76 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Attendance - Session Only</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-slate-50 min-h-screen">
 
-    <nav class="bg-white border-b px-6 py-4 sticky top-0 z-50 shadow-sm flex justify-between items-center">
-        <h1 class="font-black text-blue-600">ATTENDANCE PRO</h1>
-        <div class="flex bg-slate-100 p-1 rounded-xl">
-            <button onclick="tab('u')" id="tu" class="px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white shadow-md">ইউজার লিস্ট</button>
-            <button onclick="tab('l')" id="tl" class="px-4 py-2 text-xs font-bold rounded-lg text-slate-500">হাজিরার রিপোর্ট</button>
-        </div>
-    </nav>
+<script>
+    let db = []; 
+    let rpt = [];
 
-    <main class="max-w-4xl mx-auto p-6">
-        <div id="v-u" class="space-y-6">
-            <div class="bg-white p-6 rounded-3xl border shadow-sm text-center py-10" id="empty-state">
-                <p class="text-slate-400 text-sm">কোনো ইউজার নেই। রিফ্রেশ করলে ডাটা মুছে যাবে।</p>
-            </div>
-            <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="font-bold">স্টুডেন্ট ডাটাবেস</h2>
-                    <button onclick="reg()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">+ নতুন ছাত্র</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="text-slate-400 uppercase border-b text-[10px] tracking-widest">
-                            <tr><th class="pb-3">নাম</th><th class="pb-3">আইডি</th><th class="pb-3 text-right">অ্যাকশন</th></tr>
-                        </thead>
-                        <tbody id="u-table" class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    const toB64 = (b) => btoa(String.fromCharCode(...new Uint8Array(b)));
 
-        <div id="v-l" class="hidden space-y-6">
-            <div class="bg-slate-900 text-white p-10 rounded-[2.5rem] text-center shadow-xl">
-                <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-700">
-                    <i class="fas fa-fingerprint text-blue-400 text-2xl"></i>
-                </div>
-                <h3 class="text-xl font-bold mb-6">হাজিরা স্ক্যান করুন</h3>
-                <button onclick="attn()" class="w-full max-w-xs bg-blue-600 py-4 rounded-2xl font-black uppercase shadow-lg active:scale-95 transition-all">আঙুল রাখুন</button>
-                <p id="msg" class="mt-4 text-[10px] font-bold uppercase tracking-widest text-slate-500"></p>
-            </div>
-
-            <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                <h2 class="font-bold mb-4">আজকের রিপোর্ট</h2>
-                <div class="overflow-y-auto max-h-60">
-                    <table class="w-full text-left text-sm">
-                        <tbody id="l-table" class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        // LocalStorage সরিয়ে ভেরিয়েবল ব্যবহার করা হয়েছে
-        let db = []; 
-        let rpt = [];
-
-        const toB64 = (b) => btoa(String.fromCharCode(...new Uint8Array(b)));
-
-        async function reg() {
-            const n = prompt("নাম:");
-            if (!n) return;
-            try {
-                const opt = {
-                    publicKey: {
-                        challenge: crypto.getRandomValues(new Uint8Array(32)),
-                        rp: { name: "System", id: window.location.hostname || "localhost" },
-                        user: { id: crypto.getRandomValues(new Uint8Array(16)), name: n, displayName: n },
-                        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                        authenticatorSelection: { authenticatorAttachment: "platform" },
-                        timeout: 60000
-                    }
-                };
-                const c = await navigator.credentials.create(opt);
-                if (c) {
-                    db.push({ id: toB64(c.rawId), n: n });
-                    render();
+    async function reg() {
+        const n = prompt("নাম:");
+        if (!n) return;
+        try {
+            const opt = {
+                publicKey: {
+                    challenge: crypto.getRandomValues(new Uint8Array(32)),
+                    rp: { name: "Attendance System", id: window.location.hostname || "localhost" },
+                    user: { 
+                        id: crypto.getRandomValues(new Uint8Array(16)), 
+                        name: n, 
+                        displayName: n 
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                    authenticatorSelection: { authenticatorAttachment: "platform" },
+                    timeout: 60000
                 }
-            } catch (e) { alert("ব্যর্থ! বায়োমেট্রিক সাপোর্ট নেই বা বাতিল করা হয়েছে।"); }
-        }
-
-        async function attn() {
-            if (db.length === 0) return alert("কোনো ইউজার রেজিস্টার করা নেই!");
-            const m = document.getElementById('msg');
-            m.innerText = "স্ক্যানার চালু হয়েছে...";
-            m.className = "mt-4 text-[10px] font-bold uppercase text-blue-400";
-
-            try {
-                const a = await navigator.credentials.get({
-                    publicKey: { 
-                        challenge: crypto.getRandomValues(new Uint8Array(32)), 
-                        userVerification: "required" 
-                    }
-                });
-                if (a) {
-                    const kid = toB64(a.rawId);
-                    const s = db.find(x => x.id === kid);
-                    if (s) {
-                        rpt.unshift({ n: s.n, t: new Date().toLocaleTimeString() });
-                        render();
-                        m.innerText = "সফল: " + s.n;
-                        m.className = "mt-4 text-[10px] font-bold uppercase text-emerald-500";
-                    } else {
-                        m.innerText = "ইউজার পাওয়া যায়নি!";
-                        m.className = "mt-4 text-[10px] font-bold uppercase text-red-500";
-                    }
-                }
-            } catch (e) { 
-                m.innerText = "স্ক্যান বাতিল!"; 
-                m.className = "mt-4 text-[10px] font-bold uppercase text-red-500";
+            };
+            const c = await navigator.credentials.create(opt);
+            if (c) {
+                db.push({ id: toB64(c.rawId), n: n });
+                render();
+                alert("নিবন্ধন সফল!");
             }
+        } catch (e) { 
+            console.error(e);
+            alert("নিবন্ধন ব্যর্থ! নিশ্চিত করুন আপনি HTTPS বা Localhost ব্যবহার করছেন।"); 
         }
+    }
 
-        function tab(t) {
-            document.getElementById('v-u').classList.toggle('hidden', t !== 'u');
-            document.getElementById('v-l').classList.toggle('hidden', t !== 'l');
-            document.getElementById('tu').className = t === 'u' ? "px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white shadow-md" : "px-4 py-2 text-xs font-bold rounded-lg text-slate-500";
-            document.getElementById('tl').className = t === 'l' ? "px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white shadow-md" : "px-4 py-2 text-xs font-bold rounded-lg text-slate-500";
-        }
-
-        function render() {
-            // খালি থাকলে মেসেজ দেখাবে
-            document.getElementById('empty-state').style.display = db.length === 0 ? 'block' : 'none';
-            
-            document.getElementById('u-table').innerHTML = db.map((x, i) => `<tr><td class="py-3 font-bold">${x.n}</td><td class="py-3 text-[10px] font-mono text-blue-500">${x.id.slice(0, 15)}...</td><td class="text-right"><button onclick="del(${i})" class="text-red-300 hover:text-red-500"><i class="fas fa-trash"></i></button></td></tr>`).join('');
-            document.getElementById('l-table').innerHTML = rpt.map(x => `<tr><td class="py-2 font-bold text-slate-700">${x.n}</td><td class="py-2 text-slate-400 text-xs">${x.t}</td><td class="text-right text-emerald-500 font-bold text-[10px]">PRESENT</td></tr>`).join('');
-        }
-
-        function del(i) { db.splice(i, 1); render(); }
+    async function attn() {
+        if (db.length === 0) return alert("প্রথমে অন্তত একজন ইউজার রেজিস্টার করুন!");
+        const m = document.getElementById('msg');
+        m.innerText = "স্ক্যানার চালু হয়েছে...";
         
-        // পেজ লোড হলে আগের ডাটা ক্লিয়ার নিশ্চিত করা
-        window.onload = () => {
-            db = [];
-            rpt = [];
-            render();
-        };
-    </script>
-</body>
-</html>
+        try {
+            // allowCredentials সেট করা হয়েছে যাতে ব্রাউজার শুধু রেজিস্টার্ড ফিঙ্গারপ্রিন্ট খোঁজে
+            const a = await navigator.credentials.get({
+                publicKey: { 
+                    challenge: crypto.getRandomValues(new Uint8Array(32)),
+                    allowCredentials: db.map(u => ({
+                        id: Uint8Array.from(atob(u.id), c => c.charCodeAt(0)),
+                        type: 'public-key'
+                    })),
+                    userVerification: "required" 
+                }
+            });
+
+            if (a) {
+                const kid = toB64(a.rawId);
+                const s = db.find(x => x.id === kid);
+                if (s) {
+                    rpt.unshift({ n: s.n, t: new Date().toLocaleTimeString() });
+                    render();
+                    m.innerText = "সফল: " + s.n;
+                    m.className = "mt-4 text-[10px] font-bold uppercase text-emerald-500";
+                } else {
+                    m.innerText = "ইউজার ডাটাবেসে নেই!";
+                    m.className = "mt-4 text-[10px] font-bold uppercase text-red-500";
+                }
+            }
+        } catch (e) { 
+            m.innerText = "ভেরিফিকেশন ব্যর্থ বা বাতিল!"; 
+            m.className = "mt-4 text-[10px] font-bold uppercase text-red-500";
+        }
+    }
+
+    // বাকি render এবং tab ফাংশন আগের মতোই থাকবে...
+</script>
