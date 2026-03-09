@@ -3,111 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Multi-User Biometric</title>
+    <title>Smart School - Local Storage Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .user-card { transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
-        .user-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
-        .scanning-active { animation: pulse-blue 1.5s infinite; }
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+        .student-card { transition: all 0.3s ease; }
+        .scanning { animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
     </style>
 </head>
-<body class="bg-[#0f172a] text-slate-200 min-h-screen p-6">
+<body class="bg-slate-100 min-h-screen p-4 md:p-10">
 
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-10 bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
+    <div class="max-w-5xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-10 border border-slate-200">
             <div>
-                <h1 class="text-2xl font-bold text-white">মাল্টি-ইউজার বায়োমেট্রিক প্যানেল</h1>
-                <p class="text-slate-400 text-xs">প্রতিটি ইউজারের জন্য আলাদা ইউনিক ইনপুট ফিল্ড</p>
+                <h1 class="text-2xl font-black text-slate-800 uppercase tracking-tight">স্টুডেন্ট ডাটাবেস (Local)</h1>
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Biometric Enrollment System</p>
             </div>
-            <button onclick="addNewUserField()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
-                <i class="fas fa-plus-circle"></i> নতুন ইউজার যোগ করুন
-            </button>
-        </div>
-
-        <div id="userList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex gap-4 mt-4 md:mt-0">
+                <button onclick="addNewStudent()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg transition-all flex items-center gap-2">
+                    <i class="fas fa-plus"></i> নতুন ছাত্র
+                </button>
+                <button onclick="clearAllData()" class="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-3 rounded-2xl font-bold transition-all">
+                    সব মুছুন
+                </button>
             </div>
+        </header>
 
-        <div id="emptyState" class="text-center py-20 opacity-30">
-            <i class="fas fa-users text-6xl mb-4"></i>
-            <p>এখনো কোনো ইউজার যোগ করা হয়নি। উপরের বাটনে ক্লিক করুন।</p>
-        </div>
+        <div id="studentGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
     </div>
 
-    <script>
-        let userCount = 0;
+    
 
-        // ১. নতুন ইউজার ফিল্ড তৈরি করা
-        function addNewUserField() {
-            userCount++;
-            document.getElementById('emptyState').classList.add('hidden');
+    <script>
+        // পেজ লোড হলে ডাটা রিট্রিভ করা
+        window.onload = loadFromStorage;
+
+        // ১. নতুন ছাত্রের ফিল্ড তৈরি (UI + Logic)
+        function addNewStudent(name = '', bio = '', id = Date.now()) {
+            const grid = document.getElementById('studentGrid');
+            const card = document.createElement('div');
+            card.id = `student-${id}`;
+            card.className = "student-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 relative overflow-hidden";
             
-            const userList = document.getElementById('userList');
-            const userCard = document.createElement('div');
-            userCard.className = "user-card bg-slate-800 p-6 rounded-3xl shadow-xl space-y-4 relative animate-in fade-in zoom-in duration-300";
-            userCard.id = `user-card-${userCount}`;
-            
-            userCard.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <span class="bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest">User #${userCount}</span>
-                    <button onclick="removeUser(${userCount})" class="text-slate-500 hover:text-red-400 transition-colors text-xs"><i class="fas fa-times"></i></button>
+            card.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Card</span>
+                    <button onclick="deleteStudent(${id})" class="text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
                 </div>
-                
-                <input type="text" id="name-${userCount}" placeholder="ইউজারের নাম লিখুন" 
-                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 outline-none transition-all">
-                
-                <div class="relative group">
-                    <textarea id="bio-${userCount}" readonly placeholder="বায়োমেট্রিক ডাটা এখানে আসবে..." 
-                        class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-xs font-mono text-emerald-500 h-24 resize-none outline-none group-hover:border-slate-600 transition-all"></textarea>
+
+                <div class="space-y-3">
+                    <input type="text" oninput="saveToStorage()" id="name-${id}" value="${name}" placeholder="ছাত্রের নাম..." 
+                        class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:border-blue-500 outline-none transition-all">
                     
-                    <button onclick="scanForUser(${userCount})" class="absolute bottom-3 right-3 bg-blue-600 hover:bg-blue-500 text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-90">
-                        <i class="fas fa-fingerprint"></i>
-                    </button>
+                    <div class="relative group">
+                        <textarea readonly id="bio-${id}" placeholder="বায়োমেট্রিক আইডি..." 
+                            class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-[10px] font-mono text-blue-600 h-24 resize-none outline-none">${bio}</textarea>
+                        
+                        <button onclick="scanFingerprint(${id})" id="btn-${id}" class="absolute bottom-3 right-3 w-10 h-10 bg-slate-900 text-white rounded-xl shadow-xl flex items-center justify-center hover:bg-blue-600 transition-all active:scale-90">
+                            <i class="fas fa-fingerprint"></i>
+                        </button>
+                    </div>
                 </div>
-                
-                <p id="status-${userCount}" class="text-[9px] text-slate-500 italic text-center uppercase tracking-wider">আঙুলের ছাপ দিতে নীল বাটনে ক্লিক করুন</p>
             `;
-            
-            userList.appendChild(userCard);
+            grid.prepend(card);
+            saveToStorage();
         }
 
-        // ২. নির্দিষ্ট ইউজারের জন্য স্ক্যান করা
-        async function scanForUser(id) {
-            const nameInput = document.getElementById(`name-${id}`).value;
+        // ২. বায়োমেট্রিক স্ক্যানিং
+        async function scanFingerprint(id) {
+            const name = document.getElementById(`name-${id}`).value;
             const bioField = document.getElementById(`bio-${id}`);
-            const statusText = document.getElementById(`status-${id}`);
-            const card = document.getElementById(`user-card-${id}`);
+            const btn = document.getElementById(`btn-${id}`);
 
-            if (!nameInput) {
-                alert("দয়া করে আগে এই ইউজারের নাম লিখুন!");
-                return;
-            }
+            if (!name) return alert("দয়া করে ছাত্রের নাম আগে লিখুন!");
+            if (!window.PublicKeyCredential) return alert("বায়োমেট্রিক সাপোর্ট নেই।");
 
-            if (!window.PublicKeyCredential) {
-                alert("আপনার ব্রাউজার বায়োমেট্রিক সাপোর্ট করে না।");
-                return;
-            }
-
-            // UI Feedback
-            card.classList.add('scanning-active');
-            statusText.innerText = "স্ক্যান হচ্ছে... আঙুল রাখুন";
-            statusText.classList.replace('text-slate-500', 'text-blue-400');
+            btn.classList.add('scanning');
 
             try {
-                // প্রতিটি ইউজারের জন্য আলাদা ইউনিক চ্যালেঞ্জ এবং আইডি
                 const challenge = crypto.getRandomValues(new Uint8Array(32));
-                const userId = new TextEncoder().encode(nameInput + "_" + Date.now());
+                const userId = new TextEncoder().encode(name + id);
 
                 const options = {
                     publicKey: {
                         challenge: challenge,
-                        rp: { name: "Pro Management", id: window.location.hostname },
-                        user: { id: userId, name: nameInput, displayName: nameInput },
+                        rp: { name: "Smart School", id: window.location.hostname },
+                        user: { id: userId, name: name, displayName: name },
                         pubKeyCredParams: [{ alg: -7, type: "public-key" }],
                         authenticatorSelection: { authenticatorAttachment: "platform" },
                         timeout: 60000
@@ -117,25 +104,53 @@
                 const credential = await navigator.credentials.create(options);
 
                 if (credential) {
-                    // শুধুমাত্র ওই নির্দিষ্ট ইউজারের ইনপুট ফিল্ডে ডাটা স্টোর হবে
                     bioField.value = credential.id; 
-                    statusText.innerText = "সফলভাবে বায়োমেট্রিক ডাটা ইনপুট হয়েছে!";
-                    statusText.classList.replace('text-blue-400', 'text-emerald-400');
+                    btn.classList.replace('bg-slate-900', 'bg-emerald-500');
+                    saveToStorage(); // ডাটা পাওয়ার পর লোকাল স্টোরেজে সেভ
                 }
             } catch (err) {
                 console.error(err);
-                statusText.innerText = "স্ক্যান ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
-                statusText.classList.replace('text-blue-400', 'text-red-400');
             } finally {
-                card.classList.remove('scanning-active');
+                btn.classList.remove('scanning');
             }
         }
 
-        // ৩. ইউজার রিমুভ করা
-        function removeUser(id) {
-            document.getElementById(`user-card-${id}`).remove();
-            if (document.getElementById('userList').children.length === 0) {
-                document.getElementById('emptyState').classList.remove('hidden');
+        // ৩. লোকাল স্টোরেজে ডাটা সেভ করা
+        function saveToStorage() {
+            const students = [];
+            const grid = document.getElementById('studentGrid').children;
+
+            for (let card of grid) {
+                const id = card.id.replace('student-', '');
+                const name = document.getElementById(`name-${id}`).value;
+                const bio = document.getElementById(`bio-${id}`).value;
+                students.push({ id, name, bio });
+            }
+
+            localStorage.setItem('school_attendance_data', JSON.stringify(students));
+        }
+
+        // ৪. লোকাল স্টোরেজ থেকে ডাটা লোড করা
+        function loadFromStorage() {
+            const savedData = localStorage.getItem('school_attendance_data');
+            if (savedData) {
+                const students = JSON.parse(savedData);
+                students.reverse().forEach(s => addNewStudent(s.name, s.bio, s.id));
+            }
+        }
+
+        // ৫. ডিলিট এবং ক্লিয়ার লজিক
+        function deleteStudent(id) {
+            if (confirm("আপনি কি এই ছাত্রের ডাটা মুছে ফেলতে চান?")) {
+                document.getElementById(`student-${id}`).remove();
+                saveToStorage();
+            }
+        }
+
+        function clearAllData() {
+            if (confirm("সব ডাটা মুছে ফেলা হবে। আপনি কি নিশ্চিত?")) {
+                localStorage.removeItem('school_attendance_data');
+                document.getElementById('studentGrid').innerHTML = '';
             }
         }
     </script>
