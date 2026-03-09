@@ -3,92 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart School - Local Storage Attendance</title>
+    <title>Smart School - Dual Table System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .student-card { transition: all 0.3s ease; }
-        .scanning { animation: pulse 1.5s infinite; }
-        @keyframes pulse {
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        .scan-active { animation: pulse-blue 1.5s infinite; }
+        @keyframes pulse-blue {
             0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 md:p-10">
+<body class="bg-slate-100 min-h-screen p-4 md:p-10 font-sans">
 
-    <div class="max-w-5xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-10 border border-slate-200">
-            <div>
-                <h1 class="text-2xl font-black text-slate-800 uppercase tracking-tight">স্টুডেন্ট ডাটাবেস (Local)</h1>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Biometric Enrollment System</p>
-            </div>
-            <div class="flex gap-4 mt-4 md:mt-0">
-                <button onclick="addNewStudent()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg transition-all flex items-center gap-2">
-                    <i class="fas fa-plus"></i> নতুন ছাত্র
-                </button>
-                <button onclick="clearAllData()" class="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-3 rounded-2xl font-bold transition-all">
-                    সব মুছুন
+    <div class="max-w-7xl mx-auto space-y-10">
+        
+        <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">১. স্টুডেন্ট এনরোলমেন্ট</h2>
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">এখানে নতুন ছাত্রের ফিঙ্গারপ্রিন্ট রেজিস্টার করুন</p>
+                </div>
+                <button onclick="enrollNewStudent()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg transition-all flex items-center gap-2">
+                    <i class="fas fa-user-plus"></i> নতুন ছাত্র যোগ করুন
                 </button>
             </div>
-        </header>
 
-        <div id="studentGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-slate-400 text-[10px] uppercase tracking-[0.2em] border-b">
+                            <th class="py-4 px-2">ছাত্রের নাম</th>
+                            <th class="py-4 px-2">বায়োমেট্রিক ইউনিক আইডি</th>
+                            <th class="py-4 px-2 text-right">অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        </tbody>
+                </table>
             </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-center text-center">
+                <div id="statusIcon" class="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center text-4xl mb-6 border border-slate-700">
+                    <i class="fas fa-fingerprint"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">হাজিরা দিন</h3>
+                <p class="text-slate-400 text-sm mb-8">আপনার আঙুলের ছাপ দিয়ে উপস্থিতি নিশ্চিত করুন</p>
+                <button onclick="verifyAndMarkAttendance()" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-bold shadow-xl transition-all active:scale-95">
+                    স্ক্যান শুরু করুন
+                </button>
+            </div>
+
+            <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-800">২. আজকের হাজিরার রেকর্ড</h2>
+                    <button onclick="clearAttendance()" class="text-red-500 text-xs font-bold uppercase tracking-widest">ক্লিয়ার লগ</button>
+                </div>
+                <div class="overflow-y-auto max-h-[300px]">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-400 text-[10px] uppercase tracking-widest border-b">
+                                <th class="py-3">নাম</th>
+                                <th class="py-3">সময়</th>
+                                <th class="py-3 text-right">স্ট্যাটাস</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
     </div>
 
     
 
     <script>
-        // পেজ লোড হলে ডাটা রিট্রিভ করা
-        window.onload = loadFromStorage;
+        // ডাটাবেস সিমুলেশন (LocalStorage)
+        let students = JSON.parse(localStorage.getItem('student_list')) || [];
+        let attendanceLogs = JSON.parse(localStorage.getItem('attendance_logs')) || [];
 
-        // ১. নতুন ছাত্রের ফিল্ড তৈরি (UI + Logic)
-        function addNewStudent(name = '', bio = '', id = Date.now()) {
-            const grid = document.getElementById('studentGrid');
-            const card = document.createElement('div');
-            card.id = `student-${id}`;
-            card.className = "student-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 relative overflow-hidden";
-            
-            card.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Card</span>
-                    <button onclick="deleteStudent(${id})" class="text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
-                </div>
+        window.onload = () => {
+            renderUserTable();
+            renderAttendanceTable();
+        };
 
-                <div class="space-y-3">
-                    <input type="text" oninput="saveToStorage()" id="name-${id}" value="${name}" placeholder="ছাত্রের নাম..." 
-                        class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:border-blue-500 outline-none transition-all">
-                    
-                    <div class="relative group">
-                        <textarea readonly id="bio-${id}" placeholder="বায়োমেট্রিক আইডি..." 
-                            class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-[10px] font-mono text-blue-600 h-24 resize-none outline-none">${bio}</textarea>
-                        
-                        <button onclick="scanFingerprint(${id})" id="btn-${id}" class="absolute bottom-3 right-3 w-10 h-10 bg-slate-900 text-white rounded-xl shadow-xl flex items-center justify-center hover:bg-blue-600 transition-all active:scale-90">
-                            <i class="fas fa-fingerprint"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            grid.prepend(card);
-            saveToStorage();
-        }
+        // --- টেবিল ১: এনরোলমেন্ট লজিক ---
+        async function enrollNewStudent() {
+            const name = prompt("ছাত্রের নাম লিখুন:");
+            if (!name) return;
 
-        // ২. বায়োমেট্রিক স্ক্যানিং
-        async function scanFingerprint(id) {
-            const name = document.getElementById(`name-${id}`).value;
-            const bioField = document.getElementById(`bio-${id}`);
-            const btn = document.getElementById(`btn-${id}`);
-
-            if (!name) return alert("দয়া করে ছাত্রের নাম আগে লিখুন!");
             if (!window.PublicKeyCredential) return alert("বায়োমেট্রিক সাপোর্ট নেই।");
-
-            btn.classList.add('scanning');
 
             try {
                 const challenge = crypto.getRandomValues(new Uint8Array(32));
-                const userId = new TextEncoder().encode(name + id);
+                const userId = new TextEncoder().encode(name + Date.now());
 
                 const options = {
                     publicKey: {
@@ -104,54 +118,93 @@
                 const credential = await navigator.credentials.create(options);
 
                 if (credential) {
-                    bioField.value = credential.id; 
-                    btn.classList.replace('bg-slate-900', 'bg-emerald-500');
-                    saveToStorage(); // ডাটা পাওয়ার পর লোকাল স্টোরেজে সেভ
+                    students.push({ id: credential.id, name: name });
+                    localStorage.setItem('student_list', JSON.stringify(students));
+                    renderUserTable();
+                    alert("ছাত্র সফলভাবে এনরোল হয়েছে!");
                 }
             } catch (err) {
                 console.error(err);
+                alert("এনরোলমেন্ট ব্যর্থ হয়েছে।");
+            }
+        }
+
+        function renderUserTable() {
+            const body = document.getElementById('userTableBody');
+            body.innerHTML = students.map((s, index) => `
+                <tr class="border-b hover:bg-slate-50 transition-colors text-sm">
+                    <td class="py-4 px-2 font-bold text-slate-700">${s.name}</td>
+                    <td class="py-4 px-2 font-mono text-blue-500 text-[10px]">${s.id.slice(0, 30)}...</td>
+                    <td class="py-4 px-2 text-right">
+                        <button onclick="deleteStudent(${index})" class="text-red-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- টেবিল ২: হাজিরা লজিক ---
+        async function verifyAndMarkAttendance() {
+            if (students.length === 0) return alert("প্রথমে ছাত্র এনরোল করুন!");
+
+            const icon = document.getElementById('statusIcon');
+            icon.classList.add('scan-active', 'text-blue-500');
+
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const assertion = await navigator.credentials.get({
+                    publicKey: { challenge: challenge, userVerification: "required" }
+                });
+
+                if (assertion) {
+                    // এখানে আইডি চেক করে স্টুডেন্ট খুঁজে বের করা (সিমুলেশন)
+                    // বাস্তবে assertion.id দিয়ে ডাটাবেসে কুয়েরি করতে হয়
+                    const student = students.find(s => s.id === assertion.id) || { name: "অজানা ছাত্র" };
+                    
+                    const newLog = {
+                        name: student.name,
+                        time: new Date().toLocaleTimeString(),
+                        status: "Present"
+                    };
+
+                    attendanceLogs.unshift(newLog);
+                    localStorage.setItem('attendance_logs', JSON.stringify(attendanceLogs));
+                    renderAttendanceTable();
+                    alert(student.name + "-এর হাজিরা নেওয়া হয়েছে!");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("ভেরিফিকেশন ব্যর্থ হয়েছে!");
             } finally {
-                btn.classList.remove('scanning');
+                icon.classList.remove('scan-active', 'text-blue-500');
             }
         }
 
-        // ৩. লোকাল স্টোরেজে ডাটা সেভ করা
-        function saveToStorage() {
-            const students = [];
-            const grid = document.getElementById('studentGrid').children;
-
-            for (let card of grid) {
-                const id = card.id.replace('student-', '');
-                const name = document.getElementById(`name-${id}`).value;
-                const bio = document.getElementById(`bio-${id}`).value;
-                students.push({ id, name, bio });
-            }
-
-            localStorage.setItem('school_attendance_data', JSON.stringify(students));
+        function renderAttendanceTable() {
+            const body = document.getElementById('attendanceTableBody');
+            body.innerHTML = attendanceLogs.map(log => `
+                <tr class="border-b text-sm">
+                    <td class="py-3 font-bold text-slate-700">${log.name}</td>
+                    <td class="py-3 text-slate-500 font-mono text-xs">${log.time}</td>
+                    <td class="py-3 text-right">
+                        <span class="bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg text-[10px] font-black uppercase">উপস্থিত</span>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        // ৪. লোকাল স্টোরেজ থেকে ডাটা লোড করা
-        function loadFromStorage() {
-            const savedData = localStorage.getItem('school_attendance_data');
-            if (savedData) {
-                const students = JSON.parse(savedData);
-                students.reverse().forEach(s => addNewStudent(s.name, s.bio, s.id));
-            }
-        }
-
-        // ৫. ডিলিট এবং ক্লিয়ার লজিক
-        function deleteStudent(id) {
-            if (confirm("আপনি কি এই ছাত্রের ডাটা মুছে ফেলতে চান?")) {
-                document.getElementById(`student-${id}`).remove();
-                saveToStorage();
+        // ডিলিট ফাংশন
+        function deleteStudent(index) {
+            if(confirm("মুছে ফেলতে চান?")) {
+                students.splice(index, 1);
+                localStorage.setItem('student_list', JSON.stringify(students));
+                renderUserTable();
             }
         }
 
-        function clearAllData() {
-            if (confirm("সব ডাটা মুছে ফেলা হবে। আপনি কি নিশ্চিত?")) {
-                localStorage.removeItem('school_attendance_data');
-                document.getElementById('studentGrid').innerHTML = '';
-            }
+        function clearAttendance() {
+            attendanceLogs = [];
+            localStorage.setItem('attendance_logs', JSON.stringify(attendanceLogs));
+            renderAttendanceTable();
         }
     </script>
 </body>
