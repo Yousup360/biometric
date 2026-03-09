@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Attendance - Pro</title>
+    <title>Smart Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -57,7 +57,7 @@
     </main>
 
     <script>
-        // রিফ্রেশ করলে এই ভেরিয়েবলগুলো খালি হয়ে যাবে
+        // No LocalStorage - Session only
         let db = []; 
         let rpt = [];
 
@@ -65,16 +65,19 @@
         const fromB64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
         async function reg() {
-            const n = prompt("নাম:");
+            const n = prompt("ছাত্রের নাম:");
             if (!n) return;
             try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const userId = crypto.getRandomValues(new Uint8Array(16));
+                
                 const opt = {
                     publicKey: {
-                        challenge: crypto.getRandomValues(new Uint8Array(32)),
-                        rp: { name: "System", id: window.location.hostname },
-                        user: { id: crypto.getRandomValues(new Uint8Array(16)), name: n, displayName: n },
+                        challenge: challenge,
+                        rp: { name: "Attendance System", id: window.location.hostname },
+                        user: { id: userId, name: n, displayName: n },
                         pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        authenticatorSelection: { authenticatorAttachment: "platform" },
                         timeout: 60000
                     }
                 };
@@ -82,25 +85,23 @@
                 if (c) {
                     db.push({ id: toB64(c.rawId), n: n });
                     render();
-                    alert("সফলভাবে রেজিস্টার হয়েছে!");
+                    alert("নিবন্ধন সফল!");
                 }
             } catch (e) { 
-                console.error(e);
-                alert("ব্যর্থ! নিশ্চিত করুন আপনার ফোনে স্ক্রিন লক সেট করা আছে।"); 
+                alert("রেজিস্ট্রেশন ব্যর্থ! ফোনের বায়োমেট্রিক সাপোর্ট চেক করুন।");
             }
         }
 
         async function attn() {
-            if (db.length === 0) return alert("প্রথমে ইউজার লিস্টে ছাত্র যোগ করুন!");
+            if (db.length === 0) return alert("ইউজার লিস্ট খালি!");
             const m = document.getElementById('msg');
-            m.innerText = "স্ক্যানার চালু হয়েছে...";
+            m.innerText = "স্ক্যান হচ্ছে...";
             m.className = "mt-4 text-[10px] font-bold uppercase text-blue-400";
 
             try {
                 const a = await navigator.credentials.get({
                     publicKey: { 
                         challenge: crypto.getRandomValues(new Uint8Array(32)),
-                        // এই অংশটি নিশ্চিত করে যে শুধুমাত্র সেভ করা আইডিগুলোই স্ক্যান হবে
                         allowCredentials: db.map(u => ({
                             id: fromB64(u.id),
                             type: 'public-key'
@@ -118,13 +119,12 @@
                         m.innerText = "সফল: " + s.n;
                         m.className = "mt-4 text-[10px] font-bold uppercase text-emerald-500";
                     } else {
-                        m.innerText = "আইডি ম্যাচ করেনি!";
+                        m.innerText = "ইউজার পাওয়া যায়নি!";
                         m.className = "mt-4 text-[10px] font-bold uppercase text-red-500";
                     }
                 }
             } catch (e) { 
-                console.error(e);
-                m.innerText = "স্ক্যান বাতিল বা ত্রুটি!"; 
+                m.innerText = "বাতিল করা হয়েছে"; 
                 m.className = "mt-4 text-[10px] font-bold uppercase text-red-500";
             }
         }
@@ -137,13 +137,28 @@
         }
 
         function render() {
-            document.getElementById('u-table').innerHTML = db.map((x, i) => `<tr><td class="py-3 font-bold">${x.n}</td><td class="py-3 text-[10px] font-mono text-blue-500">${x.id.slice(0, 15)}...</td><td class="text-right"><button onclick="del(${i})" class="text-red-300"><i class="fas fa-trash"></i></button></td></tr>`).join('');
-            document.getElementById('l-table').innerHTML = rpt.map(x => `<tr><td class="py-2 font-bold text-slate-700">${x.n}</td><td class="py-2 text-slate-400 text-xs">${x.t}</td><td class="text-right text-emerald-500 font-bold text-[10px]">PRESENT</td></tr>`).join('');
+            const ut = document.getElementById('u-table');
+            const lt = document.getElementById('l-table');
+            
+            ut.innerHTML = db.map((x, i) => `
+                <tr>
+                    <td class="py-3 font-bold">${x.n}</td>
+                    <td class="py-3 text-[10px] font-mono text-blue-500">${x.id.slice(0, 10)}...</td>
+                    <td class="text-right">
+                        <button onclick="del(${i})" class="text-red-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+            
+            lt.innerHTML = rpt.map(x => `
+                <tr>
+                    <td class="py-2 font-bold text-slate-700">${x.n}</td>
+                    <td class="py-2 text-slate-400 text-xs">${x.t}</td>
+                    <td class="text-right text-emerald-500 font-bold text-[10px]">PRESENT</td>
+                </tr>`).join('');
         }
 
         function del(i) { db.splice(i, 1); render(); }
-        
-        // নিশ্চিত করা যে রিফ্রেশে সব ক্লিয়ার হয়
+
         window.onload = render;
     </script>
 </body>
